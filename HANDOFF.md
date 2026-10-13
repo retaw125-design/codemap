@@ -112,7 +112,10 @@ D1 완료 기준: 배포 링크가 열리고, 백엔드 스키마를 바꾸면 �
 ## 5. 지금 상태 (2026-10-13 갱신)
 - 백엔드: 완료, 검사 전부 통과.
 - 프론트: 완료. `client.ts`, `App.tsx` 등 "다음 첫 작업" 2번 목록 전부 작성. test(3개)·lint·format:check·typecheck·build 통과.
-- CI: `.github/workflows/ci.yml` 작성(잡 5개: backend, frontend, api-types, secrets, docker). 로컬에서 backend·frontend·api-types 명령은 통과 확인. **gitleaks와 docker 잡은 로컬에 도구가 없어 아직 한 번도 실행 안 됨** → 첫 push 때 CI 결과를 확인해야 한다.
-  - docker 잡은 이미지 빌드 후 컨테이너를 DB 없이 띄워 `/health`가 503 `DATABASE_UNAVAILABLE`을 주는지까지 본다(앱이 실제로 뜨는지 확인).
+- CI: `.github/workflows/ci.yml` 잡 5개(backend, frontend, api-types, secrets, docker) 전부 GitHub에서 통과(실행 38374283985).
+  - docker 잡은 이미지 빌드 후 컨테이너를 DB 없이 띄워 `/health`가 503 `DATABASE_UNAVAILABLE`을 주는 것까지 확인한다.
+  - `astral-sh/setup-uv`는 주 버전 태그(v10)가 없어 정확한 버전(v10.3.0)으로 고정해야 한다.
+  - 10월 19일부터 `ubuntu-latest`가 Ubuntu 26으로 바뀐다. 그 뒤 CI가 깨지면 먼저 확인할 것.
 - CLAUDE.md "명령어" 채움, "작업 방식"에 한국어 규칙 추가. decision-log에 3절 결정 기록 완료.
-- 남은 것: 브랜치 push(사용자 승인 필요) → CI 결과 확인 → 배포(사용자 계정 작업) → 완료 기준 확인 → reviewer 에이전트 검토 → PR.
+- 브랜치 push 완료(origin/d1-project-setup).
+- 남은 것: 배포(사용자 계정 작업) → 완료 기준 확인 → reviewer 에이전트 검토 → PR.
