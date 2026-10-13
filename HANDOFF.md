@@ -58,11 +58,12 @@ D1 완료 기준: 배포 링크가 열리고, 백엔드 스키마를 바꾸면 �
 3. `npm test`, `npm run lint`, `npm run format:check`, `npm run typecheck`, `npm run build` 통과시키기.
 
 ### 그다음
-4. CI `.github/workflows/ci.yml` — 모든 브랜치 push·PR. 잡 4개:
+4. CI `.github/workflows/ci.yml` — 모든 브랜치 push·PR. 잡 5개:
    - backend: `uv sync --locked` → ruff check → ruff format --check → mypy → pytest
    - frontend: `npm ci` → lint → format:check → typecheck → test → build
    - api-types: `npm run gen:api` 후 `git diff --exit-code frontend/src/api`
    - secrets: gitleaks 바이너리로 전체 이력 검사
+   - docker: `backend/Dockerfile`로 이미지 빌드(push 없음). 로컬에 Docker가 없어 배포 전에 CI에서 검증한다.
 5. 배포 (사용자 계정 작업 필요, 아래 "사용자가 할 일")
 6. 완료 기준 확인:
    - Pages 주소에서 "API 정상 · DB 정상"이 보이는지

@@ -42,7 +42,8 @@ describe('App 헬스 상태 표시', () => {
       json(
         {
           code: 'DATABASE_UNAVAILABLE',
-          message: '데이터베이스에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+          message:
+            '데이터베이스에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.',
           request_id: 'req-123',
         },
         503,
