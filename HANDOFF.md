@@ -121,6 +121,7 @@ D1 완료 기준: 배포 링크가 열리고, 백엔드 스키마를 바꾸면 �
 - Railway 배포 완료: https://codemap-production-7c81.up.railway.app (싱가포르, `d1-project-setup` 브랜치, Root `/backend`, CI 대기 켬, 포트 8080)
   - `/health` → 200 `{"status":"ok","database":"ok"}`, 없는 주소 → 404 `REQUEST_NOT_FOUND` 형식 확인.
   - Supabase 운영 프로젝트도 싱가포르(ap-southeast-1), Session pooler + `?sslmode=require`.
+  - 운영 DB 비밀번호는 대화에 노출되어 2026-10-13 교체함(교체 후 재배포 ACTIVE, `/health` 정상).
   - `PAGES_PROJECT_NAME`은 아직 안 넣음: Pages 실제 주소 확인 후 넣는다.
   - main 병합 후 Railway 브랜치를 `main`으로 되돌려야 한다.
 - 남은 것: 배포(사용자 계정 작업) → 완료 기준 확인 → reviewer 에이전트 검토 → PR.
