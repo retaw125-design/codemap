@@ -102,7 +102,7 @@ D1 완료 기준: 배포 링크가 열리고, 백엔드 스키마를 바꾸면 �
 | Docker 이미지 로컬 빌드 미확인 | 이 맥에 docker가 없음. CI/Railway가 첫 빌드 |
 
 ## 4. 알려진 이슈
-- **npm 캐시 권한**: `~/.npm` 안의 파일 590개가 root 소유라서(이전에 `sudo npm`을 쓴 흔적) npm이 `EACCES`로 실패한다.
+- ~~**npm 캐시 권한**~~ (2026-10-13 사용자가 chown으로 해결, 기본 캐시 정상 동작 확인): `~/.npm` 안의 파일 590개가 root 소유라서(이전에 `sudo npm`을 쓴 흔적) npm이 `EACCES`로 실패한다.
   - 이번 세션은 임시 캐시(`npm_config_cache=<세션 스크래치패드>/npm-cache`)로 우회했다.
   - 사용자가 직접 실행해서 고칠 것: `sudo chown -R $(id -u):$(id -g) ~/.npm`
 - **프론트 빌드는 지금 깨져 있음**: `src/App.tsx`는 아직 템플릿 코드여서 삭제한 assets와 `App.css`를 import한다. `src/main.tsx`도 삭제한 `index.css`를 import한다. 다음 첫 작업에서 고친다.
