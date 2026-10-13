@@ -109,7 +109,10 @@ D1 완료 기준: 배포 링크가 열리고, 백엔드 스키마를 바꾸면 �
 - `frontend/.gitignore`는 Vite 템플릿 것이 그대로 있다. 루트 `.gitignore`와 내용이 겹치지만 문제는 없다.
 - Railway 설정 파일 경로는 대시보드에서 `/backend/railway.json`으로 직접 지정해야 한다.
 
-## 5. 지금 상태
+## 5. 지금 상태 (2026-10-13 갱신)
 - 백엔드: 완료, 검사 전부 통과.
-- 프론트: `src/App.test.tsx`는 작성만 했고 **아직 한 번도 실행하지 않았다**. 첫 실행은 실패가 정상이다(`client.ts` 없음, App이 템플릿 그대로).
-- CI, 배포, CLAUDE.md 명령어, decision-log 기록: 시작 전.
+- 프론트: 완료. `client.ts`, `App.tsx` 등 "다음 첫 작업" 2번 목록 전부 작성. test(3개)·lint·format:check·typecheck·build 통과.
+- CI: `.github/workflows/ci.yml` 작성(잡 5개: backend, frontend, api-types, secrets, docker). 로컬에서 backend·frontend·api-types 명령은 통과 확인. **gitleaks와 docker 잡은 로컬에 도구가 없어 아직 한 번도 실행 안 됨** → 첫 push 때 CI 결과를 확인해야 한다.
+  - docker 잡은 이미지 빌드 후 컨테이너를 DB 없이 띄워 `/health`가 503 `DATABASE_UNAVAILABLE`을 주는지까지 본다(앱이 실제로 뜨는지 확인).
+- CLAUDE.md "명령어" 채움, "작업 방식"에 한국어 규칙 추가. decision-log에 3절 결정 기록 완료.
+- 남은 것: 브랜치 push(사용자 승인 필요) → CI 결과 확인 → 배포(사용자 계정 작업) → 완료 기준 확인 → reviewer 에이전트 검토 → PR.

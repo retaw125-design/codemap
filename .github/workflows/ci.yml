@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: '0.13.0'
+  NODE_VERSION: '24'
+
+jobs:
+  backend:
+    name: 백엔드 (ruff, mypy, pytest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --locked
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run mypy
+      - run: uv run pytest
+
+  frontend:
+    name: 프론트엔드 (eslint, prettier, tsc, vitest, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  api-types:
+    name: 자동 생성 타입 최신 여부
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: uv sync --locked
+        working-directory: backend
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run gen:api
+        working-directory: frontend
+      - name: 생성 결과가 커밋된 파일과 같은지 확인
+        run: |
+          if ! git diff --exit-code -- frontend/src/api; then
+            echo "::error::백엔드 스키마가 바뀌었습니다. frontend에서 'npm run gen:api'를 실행하고 결과를 커밋하세요."
+            exit 1
+          fi
+
+  secrets:
+    name: 키 유출 검사 (gitleaks)
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: '8.30.1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: gitleaks 설치 (체크섬 확인)
+        run: |
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -sSfLO "${base}/${tarball}"
+          curl -sSfLO "${base}/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          grep " ${tarball}\$" "gitleaks_${GITLEAKS_VERSION}_checksums.txt" | sha256sum --check
+          tar -xzf "${tarball}" gitleaks
+          sudo install gitleaks /usr/local/bin/gitleaks
+      - name: 전체 이력 검사
+        run: gitleaks git --redact --verbose .
+
+  docker:
+    name: 백엔드 Docker 이미지 빌드
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: 이미지 빌드 (push 없음)
+        run: docker build --tag codemap-backend:ci backend
+      - name: 컨테이너가 뜨고 DB 없이 /health가 503을 주는지 확인
+        run: |
+          docker run --detach --name backend --publish 8000:8000 \
+            --env APP_ENV=production codemap-backend:ci
+          for _ in $(seq 1 30); do
+            status=$(curl -s -o body.json -w '%{http_code}' http://localhost:8000/health || true)
+            if [ "$status" != "000" ]; then break; fi
+            sleep 1
+          done
+          echo "status=${status}"
+          cat body.json; echo
+          docker logs backend
+          test "$status" = "503"
+          python3 -c "import json,sys; assert json.load(open('body.json'))['code'] == 'DATABASE_UNAVAILABLE'"
+      - if: always()
+        run: docker rm --force backend || true
