@@ -3,18 +3,18 @@ from collections.abc import Callable, Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.errors import AppError
 from app.api.health import DatabaseCheck, get_database_check
 from app.config import Settings
+from app.domain.errors import AppError
 from app.main import create_app
 
-DATABASE_ENV_VARS = ("APP_ENV", "DATABASE_URL", "FRONTEND_ORIGIN")
+ENV_VARS = ("APP_ENV", "DATABASE_URL", "PAGES_PROJECT_NAME")
 
 
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """개발자 컴퓨터의 환경변수나 .env가 테스트 결과를 바꾸지 않게 한다."""
-    for name in DATABASE_ENV_VARS:
+    for name in ENV_VARS:
         monkeypatch.delenv(name, raising=False)
 
 

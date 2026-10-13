@@ -6,8 +6,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from app.api.errors import AppError
 from app.config import Settings
+from app.domain.errors import AppError
 
 
 def _assert_error_shape(body: dict[str, object], code: str) -> None:

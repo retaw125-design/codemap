@@ -10,6 +10,10 @@ import sys
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
+
+from app.config import Settings
+from app.main import create_app
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -48,21 +52,45 @@ def test_export_needs_no_database_or_env(tmp_path: Path, env: dict[str, str]) ->
     assert "/health" in spec["paths"]  # type: ignore[operator]
 
 
-def test_import_does_not_create_pool(monkeypatch: pytest.MonkeyPatch) -> None:
-    """import와 create_app만으로는 DB 풀을 만들지 않는다 (풀은 lifespan에서)."""
-    import psycopg_pool
+class _PoolSpy:
+    """AsyncConnectionPool 대신 들어가 생성 횟수만 센다."""
 
-    def _forbidden(*args: object, **kwargs: object) -> None:
-        raise AssertionError("DB pool created outside lifespan")
+    created = 0
 
-    monkeypatch.setattr(psycopg_pool, "AsyncConnectionPool", _forbidden)
-    monkeypatch.setenv("DATABASE_URL", UNREACHABLE_DB)
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        type(self).created += 1
 
-    from app.config import Settings
-    from app.main import create_app
+    async def open(self, wait: bool = True) -> None:
+        return None
 
-    app = create_app(Settings(_env_file=None))
+    async def close(self) -> None:
+        return None
+
+
+@pytest.fixture
+def pool_spy(monkeypatch: pytest.MonkeyPatch) -> type[_PoolSpy]:
+    from app.infrastructure.persistence import db
+
+    _PoolSpy.created = 0
+    monkeypatch.setattr(db, "AsyncConnectionPool", _PoolSpy)
+    return _PoolSpy
+
+
+def test_create_app_and_openapi_do_not_create_pool(pool_spy: type[_PoolSpy]) -> None:
+    """create_app과 OpenAPI 생성만으로는 DB 풀을 만들지 않는다."""
+    app = create_app(Settings(_env_file=None, database_url=UNREACHABLE_DB))
     assert "/health" in app.openapi()["paths"]
+    assert pool_spy.created == 0
+
+
+def test_pool_is_created_at_lifespan_start(pool_spy: type[_PoolSpy]) -> None:
+    """풀은 앱이 시작될 때(lifespan) 만들어진다.
+
+    위 테스트의 가짜 풀이 실제로 끼워졌음도 함께 보여준다.
+    """
+    app = create_app(Settings(_env_file=None, database_url=UNREACHABLE_DB))
+    with TestClient(app):
+        assert pool_spy.created == 1
 
 
 def test_error_response_schema_is_published(tmp_path: Path) -> None:
