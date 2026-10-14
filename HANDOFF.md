@@ -122,6 +122,13 @@ D1 완료 기준: 배포 링크가 열리고, 백엔드 스키마를 바꾸면 �
   - `/health` → 200 `{"status":"ok","database":"ok"}`, 없는 주소 → 404 `REQUEST_NOT_FOUND` 형식 확인.
   - Supabase 운영 프로젝트도 싱가포르(ap-southeast-1), Session pooler + `?sslmode=require`.
   - 운영 DB 비밀번호는 대화에 노출되어 2026-10-13 교체함(교체 후 재배포 ACTIVE, `/health` 정상).
-  - `PAGES_PROJECT_NAME`은 아직 안 넣음: Pages 실제 주소 확인 후 넣는다.
+  - `PAGES_PROJECT_NAME=codemap-bq7` 설정 완료(CORS 허용 헤더 확인).
+- Cloudflare Pages 배포 완료: https://codemap-bq7.pages.dev (프로젝트 이름 `codemap`, 주소는 `codemap-bq7`. 운영 브랜치 `d1-project-setup`, Root `frontend`)
+  - 변수 이름 칸에 다른 글자가 섞여 `VITE_API_BASE_URL`이 빌드에 안 들어가고 localhost로 빌드됐었다. 이름을 고쳐 해결.
+  - 재발 방지: `vite.config.ts`가 Cloudflare 빌드(CF_PAGES)에서 이 변수가 없으면 빌드를 실패시킨다.
+- **D1 완료 기준 확인 (2026-10-14)**
+  1. Pages 주소에서 "API 정상 · DB 정상" 표시 확인(브라우저).
+  2. `HealthResponse`에 필드를 임시로 추가 → `gen:api` 결과가 커밋된 파일과 달라짐(CI api-types 잡 실패 조건) → `npm run gen:api` 후 `schema.d.ts`에 반영됨. 확인 후 원상 복구.
+- 병합 후 할 일: Railway와 Pages의 운영 브랜치를 `main`으로 되돌린다.
   - main 병합 후 Railway 브랜치를 `main`으로 되돌려야 한다.
-- 남은 것: 배포(사용자 계정 작업) → 완료 기준 확인 → reviewer 에이전트 검토 → PR.
+- 남은 것: reviewer 에이전트 검토 → PR → 사용자 승인 후 main 병합.
