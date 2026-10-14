@@ -12,6 +12,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.api.request_id import HEADER as REQUEST_ID_HEADER
 from app.api.request_id import get_request_id
@@ -94,6 +95,38 @@ async def _handle_unexpected_error(request: Request, exc: Exception) -> JSONResp
         message="서버에서 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
         detail=repr(exc),
     )
+
+
+class UnexpectedErrorMiddleware:
+    """예상 못한 예외를 CORS 미들웨어 안쪽에서 ErrorResponse로 바꾼다.
+
+    Starlette의 Exception 처리기는 가장 바깥(CORS 바깥)에서 실행되어 500 응답에 CORS 헤더가 빠진다.
+    그러면 브라우저가 응답을 막아 사용자가 request_id를 받지 못한다.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        started = False
+
+        async def send_tracking(message: Message) -> None:
+            nonlocal started
+            if message["type"] == "http.response.start":
+                started = True
+            await send(message)
+
+        try:
+            await self.app(scope, receive, send_tracking)
+        except Exception as exc:
+            if started:
+                raise
+            response = await _handle_unexpected_error(Request(scope), exc)
+            await response(scope, receive, send)
 
 
 def register_error_handlers(app: FastAPI) -> None:

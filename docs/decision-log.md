@@ -31,6 +31,13 @@
 | 2026-10-13 | 공용 픽스처 양쪽 실행 CI 단계는 D11에 추가 | D1에 빈 단계 | D1에는 픽스처가 없음 | |
 | 2026-10-13 | 백엔드 Docker 이미지 빌드와 컨테이너 기동(DB 없이 `/health` 503) 검사를 CI에 추가 | Railway 첫 빌드에 맡김 | 로컬에 Docker가 없어 배포 전에 CI에서 검증해야 함 | |
 | 2026-10-14 | Cloudflare 빌드에서 `VITE_API_BASE_URL`이 없으면 빌드 실패 | 기본값 localhost로 빌드 | 변수 이름 오타로 조용히 localhost로 배포되어 원인 찾는 데 시간이 걸림 | |
+| 2026-10-14 | `APP_ENV` 기본값을 production으로 | 기본값 development | 변수를 빠뜨리거나 이름을 틀려도 에러 detail(DB 호스트 등)이 운영에서 새지 않게 함 | |
+| 2026-10-14 | 예상 못한 예외를 CORS 안쪽 미들웨어에서 ErrorResponse로 변환 | Starlette 기본 Exception 처리기 | 기본 처리기는 CORS 바깥에서 실행되어 500 응답을 브라우저가 막고 request_id가 사용자에게 안 보임 | |
 
 ## 범위 밖 개선 후보
 (에이전트와 작업 중 떠오른 개선 아이디어를 여기에 적고, 범위 회의 때 판단한다)
+- (D1 리뷰) CI 액션을 커밋 SHA로 고정, gitleaks 기대 sha256을 워크플로에 직접 적기 — 공급망 고정 강화
+- (D1 리뷰) Dockerfile 베이스 이미지(`python:3.12-slim`, `ghcr.io/astral-sh/uv`)를 다이제스트로 고정
+- (D1 리뷰) `AppError.status_code`는 HTTP 개념이 domain에 들어온 것. D2에서 domain 에러가 늘면 상태 코드 매핑을 api로 옮길지 결정
+- (D1 리뷰) 운영에서 `/docs`, `/openapi.json` 공개 여부 결정 (현재 공개, 노출 정보는 적음)
+- (D1 리뷰) 테스트 보강: 405 경로, 줄바꿈이 든 X-Request-ID, `vite.config.ts`의 CF_PAGES 빌드 검사

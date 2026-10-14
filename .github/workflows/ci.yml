@@ -78,7 +78,9 @@ jobs:
         working-directory: frontend
       - name: 생성 결과가 커밋된 파일과 같은지 확인
         run: |
-          if ! git diff --exit-code -- frontend/src/api; then
+          if [ -n "$(git status --porcelain -- frontend/src/api)" ]; then
+            git status --short -- frontend/src/api
+            git diff -- frontend/src/api
             echo "::error::백엔드 스키마가 바뀌었습니다. frontend에서 'npm run gen:api'를 실행하고 결과를 커밋하세요."
             exit 1
           fi
@@ -121,9 +123,11 @@ jobs:
             sleep 1
           done
           echo "status=${status}"
-          cat body.json; echo
           docker logs backend
+          if [ "$status" = "000" ]; then echo "::error::컨테이너가 30초 안에 응답하지 않았습니다."; exit 1; fi
+          cat body.json; echo
           test "$status" = "503"
-          python3 -c "import json,sys; assert json.load(open('body.json'))['code'] == 'DATABASE_UNAVAILABLE'"
+          # 운영 모드에서는 detail이 응답에 나가면 안 된다.
+          python3 -c "import json; b = json.load(open('body.json')); assert b['code'] == 'DATABASE_UNAVAILABLE', b; assert 'detail' not in b, b"
       - if: always()
         run: docker rm --force backend || true

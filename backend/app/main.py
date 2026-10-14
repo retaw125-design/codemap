@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
-from app.api.errors import ErrorResponse, register_error_handlers
+from app.api.errors import ErrorResponse, UnexpectedErrorMiddleware, register_error_handlers
 from app.api.request_id import HEADER as REQUEST_ID_HEADER
 from app.api.request_id import RequestIdMiddleware
 from app.config import Settings
@@ -47,6 +47,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
 
     register_error_handlers(app)
+    # CORS 안쪽에서 예상 못한 예외를 처리해 500 응답에도 CORS 헤더가 붙게 한다.
+    app.add_middleware(UnexpectedErrorMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,

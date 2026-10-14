@@ -6,7 +6,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LOCAL_DEV_ORIGINS = ("http://localhost:5173", "http://127.0.0.1:5173")
 
-# Cloudflare Pages 프로젝트 이름: 소문자, 숫자, 하이픈.
+# Cloudflare Pages의 pages.dev 하위 도메인(예: codemap-bq7): 소문자, 숫자, 하이픈.
+# 프로젝트 이름과 다를 수 있으니 실제 배정된 주소의 앞부분을 쓴다.
 # 점이 없어야 정규식이 다른 프로젝트 주소와 섞이지 않는다.
 _PAGES_PROJECT_NAME = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,56}[a-z0-9])?$")
 
@@ -16,7 +17,8 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    app_env: Literal["development", "production"] = "development"
+    # 기본값은 production이다. APP_ENV를 빠뜨려도 에러 응답에 detail이 새지 않는다.
+    app_env: Literal["development", "production"] = "production"
     database_url: str | None = None
     pages_project_name: str | None = None
 
@@ -24,7 +26,9 @@ class Settings(BaseSettings):
     @classmethod
     def _must_be_pages_project_name(cls, value: str | None) -> str | None:
         if value is not None and not _PAGES_PROJECT_NAME.fullmatch(value):
-            raise ValueError("PAGES_PROJECT_NAME은 Cloudflare Pages 프로젝트 이름이어야 합니다")
+            raise ValueError(
+                "PAGES_PROJECT_NAME은 pages.dev 하위 도메인(예: codemap-bq7)이어야 합니다"
+            )
         return value
 
     @property

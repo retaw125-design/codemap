@@ -107,3 +107,22 @@ def test_unsafe_incoming_request_id_is_replaced(client: TestClient) -> None:
     unsafe = "bad id\nwith newline" + "x" * 100
     res = client.get("/health", headers={"X-Request-ID": unsafe.replace("\n", " ")})
     assert res.headers["x-request-id"] != unsafe.replace("\n", " ")
+
+
+def test_app_env_defaults_to_production() -> None:
+    """APP_ENV를 빠뜨리거나 이름을 틀려도 detail이 운영에서 새지 않는다."""
+    assert Settings(_env_file=None).is_development is False
+
+
+def test_unexpected_error_keeps_cors_header(client_factory: Callable[..., TestClient]) -> None:
+    """500 응답도 CORS 헤더가 있어야 브라우저가 request_id를 읽을 수 있다."""
+    origin = "https://codemap.pages.dev"
+    client = client_factory(Settings(_env_file=None, pages_project_name="codemap"))
+    _add_test_routes(client.app)  # type: ignore[arg-type]
+
+    res = client.get("/_test/crash", headers={"Origin": origin})
+
+    assert res.status_code == 500
+    _assert_error_shape(res.json(), "INTERNAL_ERROR")
+    assert res.headers["access-control-allow-origin"] == origin
+    assert res.headers["x-request-id"] == res.json()["request_id"]
