@@ -56,12 +56,14 @@
 - 작업마다 브랜치를 만든다. CI 통과와 사람 승인 후에만 main에 합친다.
 - 한 번에 하나의 D-작업만 한다. 범위 밖 개선은 하지 말고 `docs/decision-log.md`에 후보로 남긴다.
 - 작업이 끝나면 바꾼 파일, 내린 판단, 남은 문제를 짧게 보고한다.
+- 모든 답변, 작업 설명, 명령 승인 요청의 설명 문구는 한국어로 작성한다.
 
-## 명령어 (D1에 확정 후 채운다)
-- 백엔드 테스트: (예정) pytest
-- 프론트엔드 테스트: (예정) vitest
-- 린트·포맷: (예정) ruff, eslint, prettier
-- API 타입 생성: (예정) OpenAPI → TypeScript 생성 도구
+## 명령어
+- 백엔드(`backend/`에서): `uv sync`, `uv run pytest`, `uv run ruff check`, `uv run ruff format`, `uv run mypy`
+- 백엔드 서버: `uv run uvicorn app.main:app --reload` (환경변수는 `backend/.env.example` 참고)
+- 프론트엔드(`frontend/`에서): `npm ci`, `npm test`, `npm run lint`, `npm run format`, `npm run typecheck`, `npm run build`, `npm run dev`
+- API 타입 생성: `frontend/`에서 `npm run gen:api` (백엔드 스키마를 바꾸면 실행하고 결과를 커밋한다. CI가 최신 여부를 검사한다)
+- CI: `.github/workflows/ci.yml` — 백엔드, 프론트엔드, 타입 최신 여부, 키 유출(gitleaks), 백엔드 Docker 이미지 빌드
 
 ## 폴더 구조
 ```
